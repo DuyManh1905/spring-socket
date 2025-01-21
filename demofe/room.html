@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Room List</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+            }
+            .room-list {
+                list-style: none;
+                padding: 0;
+            }
+            .room-list li {
+                padding: 10px;
+                margin: 5px 0;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            .room-list li:hover {
+                background-color: #f0f0f0;
+            }
+            .create-room {
+                margin-top: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Chat Rooms</h1>
+        <ul class="room-list" id="roomList"></ul>
+        <button class="create-room" id="createRoomBtn">Create Room</button>
+
+        <script>
+            const API_URL = "http://localhost:8080/api/roomchat";
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                window.location.href = "login.html"; // Redirect to login if no token
+            }
+
+            // Fetch and display rooms
+            const fetchRooms = () => {
+                fetch(`${API_URL}/all`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                })
+                    .then((response) => {
+                        if (response.ok) {
+                            return response.json();
+                        } else if (response.status === 401) {
+                            throw new Error("Unauthorized. Please log in again.");
+                        }
+                    })
+                    .then((data) => {
+                        const roomList = document.getElementById("roomList");
+                        roomList.innerHTML = ""; // Clear old list
+                        data.forEach((room) => {
+                            const li = document.createElement("li");
+                            li.textContent = room.name;
+                            li.dataset.id = room.id;
+                            li.onclick = () => {
+                                window.location.href = `chat.html?roomId=${room.id}&roomName=${room.name}`;
+                            };
+                            roomList.appendChild(li);
+                        });
+                    })
+                    .catch((err) => {
+                        alert(err.message);
+                        localStorage.removeItem("token"); // Clear token if unauthorized
+                        window.location.href = "index.html"; // Redirect to login
+                    });
+            };
+
+            // Initial fetch
+            fetchRooms();
+
+            // Handle Create Room
+            const createRoomBtn = document.getElementById("createRoomBtn");
+            createRoomBtn.addEventListener("click", () => {
+                const roomName = prompt("Enter the room name:");
+                if (roomName) {
+                    fetch(API_URL, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ name: roomName }),
+                    })
+                        .then((response) => {
+                            if (response.ok) {
+                                return response.json();
+                            } else {
+                                throw new Error("Failed to create room.");
+                            }
+                        })
+                        .then(() => {
+                            fetchRooms(); // Refresh the room list
+                        })
+                        .catch((err) => {
+                            alert(err.message);
+                        });
+                }
+            });
+        </script>
+    </body>
+</html>

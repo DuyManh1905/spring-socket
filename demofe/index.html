@@ -3,52 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room List</title>
+    <title>Login</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
         }
-        .room-list {
-            list-style: none;
-            padding: 0;
-        }
-        .room-list li {
-            padding: 10px;
-            margin: 5px 0;
+        .login-container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
             border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .login-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-        .room-list li:hover {
-            background-color: #f0f0f0;
+        .login-container button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>Chat Rooms</h1>
-    <ul class="room-list" id="roomList"></ul>
+    <div class="login-container">
+        <h2>Login</h2>
+        <input type="text" id="usernameOrEmail" placeholder="Username or Email" />
+        <input type="password" id="password" placeholder="Password" />
+        <button id="loginButton">Login</button>
+        <div class="error" id="error"></div>
+    </div>
 
     <script>
-        const API_URL = "http://localhost:8080/api/roomchat/all";
+        const loginButton = document.getElementById("loginButton");
+        const API_URL = "http://localhost:8080/api/auth/login";
 
-        // Fetch all rooms
-        fetch(API_URL)
-            .then(response => response.json())
-            .then(data => {
-                const roomList = document.getElementById('roomList');
-                data.forEach(room => {
-                    const li = document.createElement('li');
-                    li.textContent = room.name;
-                    li.dataset.id = room.id;
-                    li.onclick = () => {
-                        window.location.href = `chat.html?roomId=${room.id}&roomName=${room.name}`;
-                    };
-                    roomList.appendChild(li);
-                });
+        loginButton.addEventListener("click", () => {
+            const usernameOrEmail = document.getElementById("usernameOrEmail").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const errorDiv = document.getElementById("error");
+
+            if (!usernameOrEmail || !password) {
+                errorDiv.textContent = "Please fill in all fields.";
+                return;
+            }
+
+            // Clear any previous error messages
+            errorDiv.textContent = "";
+
+            fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    usernameOrEmail: usernameOrEmail,
+                    password: password,
+                }),
             })
-            .catch(err => console.error('Error fetching rooms:', err));
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Invalid credentials");
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    const token = data.accessToken;
+                    console.log("Token received:", token);
+
+                    // Save the token to localStorage
+                    localStorage.setItem("token", token);
+
+                    // Redirect to the room list
+                    window.location.href = "room.html";
+                })
+                .catch((error) => {
+                    errorDiv.textContent = error.message;
+                });
+        });
     </script>
 </body>
 </html>
