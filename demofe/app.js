@@ -10,6 +10,14 @@ const roomName = urlParams.get("roomName");
 
 nameGroup.textContent = `Room: ${roomName}`;
 
+// Lấy username từ LocalStorage hoặc SessionStorage sau khi đăng nhập
+const username = localStorage.getItem("username"); // Hoặc sessionStorage.getItem("username")
+
+if (!username) {
+    alert("No username found. Please log in again.");
+    window.location.href = "index.html";
+}
+
 // Connect to WebSocket
 function connect() {
     const socket = new SockJS("http://localhost:8080/ws");
@@ -38,10 +46,9 @@ function connect() {
 
 // Send message
 function sendMessage() {
-    const sender = usernameInput.value.trim();
     const content = messageInput.value.trim();
 
-    if (!sender || !content) {
+    if (!content) {
         alert("Please enter your name and message!");
         return;
     }
@@ -51,7 +58,11 @@ function sendMessage() {
         return;
     }
 
-    const chatMessage = { sender, content };
+    const chatMessage = { 
+        sender: username, 
+        content, 
+        roomName  // Thêm roomName vào tin nhắn
+    };
     stompClient.send(`/app/sendMessage/${roomName}`, {}, JSON.stringify(chatMessage));
     messageInput.value = ""; // Clear the input after sending
 }
@@ -69,7 +80,7 @@ function addMessageToChat(sender, content) {
 
 // Fetch chat history (optional)
 function fetchChatHistory() {
-    fetch("http://localhost:8080/api/chat/history") // Replace with your endpoint
+    fetch(`http://localhost:8080/api/chat/history/${roomName}`) // Replace with your endpoint
         .then(response => response.json())
         .then(data => {
             data.forEach(message => addMessageToChat(message.sender, message.content));

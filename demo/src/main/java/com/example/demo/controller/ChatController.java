@@ -14,18 +14,19 @@ import java.util.List;
 @RequestMapping("/api/chat")
 public class ChatController {
 
-    private final List<ChatMessage> messageHistory = new ArrayList<>();
+	private final List<ChatMessage> messageHistory = new ArrayList<>();
 
-    @MessageMapping("/sendMessage/{roomName}")
-    @SendTo("/topic/{roomName}")
-    public ChatMessage sendMessage(@DestinationVariable String roomName,ChatMessage message) {
-        messageHistory.add(message); // Lưu lại lịch sử chat
-        System.out.println(messageHistory.size()+"xxxx");
-        return message;
-    }
+	@MessageMapping("/sendMessage/{roomName}")
+	@SendTo("/topic/{roomName}")
+	public ChatMessage sendMessage(@DestinationVariable String roomName, ChatMessage message) {
+		messageHistory.add(message); // Lưu lại lịch sử chat
+		System.out.println(messageHistory.size() + "xxxx");
+		return message;
+	}
 
-    @GetMapping("/history")
-    public List<ChatMessage> getChatHistory() {
-        return messageHistory;
-    }
+	@GetMapping("/history/{roomName}")
+	public List<ChatMessage> getChatHistory(@PathVariable String roomName) {
+		// Lọc các tin nhắn theo roomName
+		return messageHistory.stream().filter(message -> roomName.equals(message.getRoomName())).toList();
+	}
 }
